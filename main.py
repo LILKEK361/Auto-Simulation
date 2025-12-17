@@ -15,6 +15,9 @@ running = True
 car_obj = car.Car()
 
 
+# FRONT END I NEED SOME INPUTS FOR THE CAR CLASS THANKS PS: EIERLECKEN 67
+
+
 while running:
     clock.tick(60) # 60 FPS ist fürn Arsch
     dt = clock.get_time() / 1000
