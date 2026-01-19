@@ -1,41 +1,83 @@
 import pygame
-import car
+
+from car import Car
+from track import Track
+from autopilot import Autopilot
+from hud import HUD
+from topdown_view import TopDownView
+from side_view import SideView
+
 pygame.init()
 
-
-WIDTH = 800
-HEIGHT = 600
-
+# Fenster
+WIDTH, HEIGHT = 1100, 750
 window = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Car Top-Down")
+pygame.display.set_caption("Auto Simulation (Top-Down / Side View)")
 clock = pygame.time.Clock()
 
+# Simulation-Objekte
+car_obj = Car()
+track = Track(center=pygame.Vector2(350, 300), scale_x=240, scale_y=160, zones=10)
+autopilot = Autopilot()
+
+# UI / Views
+hud = HUD(WIDTH, HEIGHT)
+topdown = TopDownView(trail_len=900)
+side = SideView()
+
 running = True
-
-car_obj = car.Car()
-
-
-# FRONT END I NEED SOME INPUTS FOR THE CAR CLASS THANKS PS: EIERLECKEN 67
-
-
 while running:
-    clock.tick(60) # 60 FPS ist fürn Arsch
-    dt = clock.get_time() / 1000
-    throttle_input = 0
-    steering_input = 0
+    dt = clock.tick(60) / 1000.0
+
+    # -------- Events --------
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w:
-                throttle_input = 1
-            elif event.key == pygame.K_s:
-                throttle_input = -1
-            if event.key == pygame.K_a:
-                steering_input = -1
-            elif event.key == pygame.K_d:
-                steering_input = 1
+        hud.handle_event(event)
 
-    car_obj.update(dt, steering_input, throttle_input)
+    # -------- Untergrund aus HUD -> Track --------
+    # (Starter-Variante: ein Untergrund für die gesamte Strecke)
+    track.set_all_surfaces(hud.selected_surface)
+
+    # -------- Progress auf Strecke bestimmen --------
+    progress = track.find_progress_nearest(car_obj.position)
+
+    # -------- Autopilot Inputs --------
+    steering_input, throttle_input = autopilot.compute(car_obj, track, progress)
+
+    # -------- Track-Parameter an aktueller Position --------
+    zone = track.get_zone(progress)
+    mu = track.get_mu_for_progress(progress)
+
+    # -------- Fahrzeug updaten --------
+    car_obj.update(dt, steering_input, throttle_input, mu, zone)
+
+    # -------- Telemetrie fürs HUD / Views --------
+    telemetry = car_obj.get_telemetry(progress)
+
+    # -------- Render --------
+    window.fill((255, 255, 255))
+
+    # Weltbereich links vom HUD
+    world_rect = pygame.Rect(0, 0, WIDTH - hud.panel_w, HEIGHT)
+
+    if hud.active_tab == "Top Down":
+        topdown.draw(
+            window,
+            world_rect,
+            car_obj,
+            telemetry,
+            track_polyline=track.polyline
+        )
+    elif hud.active_tab == "Side":
+        side.draw(window, world_rect, telemetry)
+    else:
+        # Setting tab: optional Platzhalter
+        pygame.draw.rect(window, (255, 255, 255), world_rect)
+
+    # HUD immer drüber zeichnen
+    hud.draw(window, telemetry)
+
     pygame.display.flip()
 
+pygame.quit()
