@@ -22,6 +22,10 @@ class HUD:
         # Precompute rects
         self._layout()
 
+        self.laptime_dropdown_open = False
+        self.selected_laptime_index = None
+        self.laptime_dropdown_item_rects = []
+
     def _layout(self):
         x0, y0, w = self.panel_rect.x, self.panel_rect.y, self.panel_rect.w
 
@@ -105,6 +109,25 @@ class HUD:
             self.gravity = min(30.0, self.gravity + 0.1)
             return
 
+        # Laptime Dropdown (klick auf Laptime-Zeile)
+        laptime_row_rect = self.info_rows[6]  # "Laptime" Zeile
+
+        if laptime_row_rect.collidepoint(mx, my):
+            self.laptime_dropdown_open = not self.laptime_dropdown_open
+            return
+
+        # Wenn Dropdown offen ist: Item-Klicks prüfen
+        if self.laptime_dropdown_open:
+            for idx, r in self.laptime_dropdown_item_rects:
+                if r.collidepoint(mx, my):
+                    self.selected_laptime_index = idx
+                    self.laptime_dropdown_open = False
+                    return
+
+            # Klick irgendwo anders -> Dropdown zu
+            self.laptime_dropdown_open = False
+            return
+
     def draw(self, screen: pygame.Surface, sim_state: dict):
         # Hintergrund Panel
         pygame.draw.rect(screen, (245, 245, 245), self.panel_rect)
@@ -159,6 +182,7 @@ class HUD:
         Fcent_abs = sim_state.get("corner_forces", {}).get("F_centripetal_abs", 0.0)
         Fcf_abs = sim_state.get("corner_forces", {}).get("F_centrifugal_abs", 0.0)
 
+
         info_lines = [
             f"StreckenZone: {sim_state.get('zone', 0)}",
             f"Geschwindigkeit: {sim_state.get('speed_kmh', 0):.1f} km/h",
@@ -173,6 +197,8 @@ class HUD:
             f"Zentrifugal: {Fcf_abs:.1f} N",
         ]
 
+
+
         colors = [(0, 0, 0)] * len(info_lines)
         colors[-2] = (0, 0, 255)
         colors[-1] = (0, 160, 0)
@@ -182,7 +208,61 @@ class HUD:
             pygame.draw.rect(screen, (60, 60, 60), r, 1)
             self._blit_left(screen, self.font_small, txt, r, col, pad=6)
 
+        old_laptimes = sim_state.get("old_laptimes", [])
+        # letzte 6 anzeigen (neueste oben)
+        items = list(reversed(old_laptimes))[:6]
+
+        # Dropdown-Rects neu bauen
+        self.laptime_dropdown_item_rects = []
+        if self.laptime_dropdown_open and len(items) > 0:
+            base = self.info_rows[6]  # unter Laptime
+            item_h = 22
+            drop_w = base.w
+            drop_x = base.x
+            drop_y = base.bottom + 2
+
+            for i, lap_s in enumerate(items):
+                r = pygame.Rect(drop_x, drop_y + i * (item_h + 2), drop_w, item_h)
+                original_idx = len(old_laptimes) - 1 - i
+                self.laptime_dropdown_item_rects.append((original_idx, r))
+
+                pygame.draw.rect(screen, (255, 255, 255), r)
+                pygame.draw.rect(screen, (60, 60, 60), r, 1)
+
+                prefix_text = f"Lap {original_idx + 1}: {lap_s:.2f} s  "
+                delta_text, delta_color = self.calcDelta(lap_s, items[0])
+
+                self._blit_left_with_colored_suffix(
+                    screen,
+                    self.font_small,
+                    prefix_text,
+                    delta_text,
+                    (0, 0, 0),
+                    delta_color,
+                    r,
+                    pad=6
+                )
+
         # Footer
+
+
+    def _blit_left_with_colored_suffix(self, screen, font, prefix_text, suffix_text, prefix_color, suffix_color, rect, pad=6):
+        prefix_surface = font.render(prefix_text, True, prefix_color)
+        prefix_rect = prefix_surface.get_rect(midleft=(rect.left + pad, rect.centery))
+        screen.blit(prefix_surface, prefix_rect)
+
+        suffix_surface = font.render(suffix_text, True, suffix_color)
+        suffix_rect = suffix_surface.get_rect(midleft=(prefix_rect.right + 8, rect.centery))
+        screen.blit(suffix_surface, suffix_rect)
+
+
+    def calcDelta(self, lap_s, reference_lap_s):
+        delta = lap_s - reference_lap_s
+
+        if delta > 0:
+            return f"+{delta:.2f}", (255, 0, 0)  # rot
+        else:
+            return f"{delta:.2f}", (0, 160, 0)  # grün
 
     def _draw_minimap(self, screen: pygame.Surface, sim_state: dict):
         # Dummy: Kurve + Punkt, bis ihr echte Streckenpunkte habt

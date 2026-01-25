@@ -21,4 +21,5 @@ def build_sim_state(car, track, progress: float):
         "friction_n": friction_n,
         "laptime_s": car.laptime_s,
         "track_progress": progress,
+        "old_laptimes": car.old_laptimes,
     }

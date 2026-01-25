@@ -25,6 +25,12 @@ class Car:
         self.laptime_s = 0.0
         self.tire_wear = 100.0
 
+        self.old_laptimes=[];
+        self.aufZiehlGeraden = False
+        self.lapStarted = False;
+        self.nextlab=False;
+        self.starMethodBlocker = True;
+
         # Telemetrie
         self.yaw_rate = 0.0
         self.a_long = 0.0
@@ -44,7 +50,33 @@ class Car:
 
         self.mu = float(mu)
         self.zone = int(zone)
-        self.laptime_s += dt
+
+
+        if int(self.zone) == 1:
+           self.aufZiehlGeraden = True;
+
+
+        if int(self.zone) == 2 and self.aufZiehlGeraden and self.starMethodBlocker:
+            self.lapStarted = True;
+            self.aufZiehlGeraden = False;
+            self.starMethodBlocker = False;
+
+        if int(self.zone) == 2 and self.aufZiehlGeraden and self.lapStarted:
+            self.nextlab = True;
+            self.aufZiehlGeraden = False;
+
+
+        if self.lapStarted:
+            self.laptime_s += dt
+            if self.nextlab:
+                self.old_laptimes.append(self.laptime_s)
+                self.laptime_s = 0
+                self.nextlab = False;
+
+        else:
+            self.laptime_s = 0
+
+        #self.laptime_s += dt
 
         # 1) Lenkwinkel integrieren
         steering_rate = float(steering_input) * MAX_STEERING_RATE
@@ -133,5 +165,6 @@ class Car:
                 "F_centrifugal_abs": abs(F_centrifugal),
             },
             "axle": self.axle,
+            "old_laptimes": list(self.old_laptimes),
 
         }
