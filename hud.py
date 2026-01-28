@@ -43,7 +43,7 @@ class HUD:
         btn_h = 24
         gap = 8
 
-        labels = ["Dirt", "Terra", "Rasen", "Asphalt", "???", "???"]
+        labels = ["Dirt", "Terra", "Rasen", "Asphalt", "Glatt Eis", "Voll Haftung"]
         self.surface_buttons = []
         for i, lab in enumerate(labels):
             row = i // 3

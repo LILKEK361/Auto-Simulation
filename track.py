@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 
 class Track:
     def __init__(self, center: pygame.Vector2, scale_x: float, scale_y: float, zones: int = 10):
@@ -15,13 +16,17 @@ class Track:
             "Terra":   0.60,
             "Dirt":    0.50,
             "Rasen":   0.35,
+            "Glatt Eis": 0.001,
+            "Voll Haftung": 10,
         }
         self.surface_color = {
             "Asphalt": (55, 55, 55),    # dunkelgrau
             "Terra":    (227, 83, 54),
             "Dirt":    (120, 85, 55),   # braun
             "Rasen":   (60, 130, 60),   # grün
-            "Terra":   (145, 120, 80),  # optional
+            "Terra":   (145, 120, 80),
+            "Glatt Eis": (38, 220, 206),  # optional
+            "Voll Haftung": (255,0,255),  # optional
         }
 
         self.polyline = self._generate_polyline(400)
