@@ -19,12 +19,19 @@ class TopDownView:
         self.trail = []
         self.trail_len = trail_len
 
-    def draw(self, screen, world_rect: pygame.Rect, car, telemetry: dict, track_polyline=None):
+    def draw(self, screen, world_rect, car, telemetry, track=None):
         pygame.draw.rect(screen, (255,255,255), world_rect)
 
-        # Strecke
-        if track_polyline and len(track_polyline) > 2:
-            pygame.draw.lines(screen, (0,0,0), False, track_polyline, 2)
+        # Strecke (breit)
+        if track is not None and hasattr(track, "road_poly"):
+            road_color = track.get_road_color() if hasattr(track, "get_road_color") else (235, 235, 235)
+            pygame.draw.polygon(screen, road_color, track.road_poly)
+            pygame.draw.lines(screen, (40, 40, 40), True, track.outer_edge, 2)
+            pygame.draw.lines(screen, (40, 40, 40), True, track.inner_edge, 2)
+        else:
+            # fallback (falls road noch nicht gebaut)
+            if track is not None and hasattr(track, "polyline") and len(track.polyline) > 2:
+                pygame.draw.lines(screen, (0, 0, 0), False, track.polyline, 2)
 
         # Trail updaten
         self.trail.append((car.position.x, car.position.y))

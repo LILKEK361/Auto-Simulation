@@ -16,8 +16,26 @@ class Track:
             "Dirt":    0.50,
             "Rasen":   0.35,
         }
+        self.surface_color = {
+            "Asphalt": (55, 55, 55),    # dunkelgrau
+            "Terra":    (227, 83, 54),
+            "Dirt":    (120, 85, 55),   # braun
+            "Rasen":   (60, 130, 60),   # grün
+            "Terra":   (145, 120, 80),  # optional
+        }
 
         self.polyline = self._generate_polyline(400)
+
+        self.road_half_width = 28.0
+        self.outer_edge, self.inner_edge, self.road_poly = self.build_road(
+            n=len(self.polyline),
+            half_width=self.road_half_width
+        )
+
+    def get_road_color(self) -> tuple[int, int, int]:
+        surf = self.zone_surface[0]
+        return self.surface_color.get(surf, (120, 120, 120))
+
 
     def _curve(self, t: float) -> pygame.Vector2:
         """
@@ -43,6 +61,23 @@ class Track:
         if v.length() > 1e-9:
             v = v.normalize()
         return v
+
+    def build_road(self, n: int = 400, half_width: float = 28.0):
+        outer = []
+        inner = []
+
+        for i in range(n):
+            t = i / n
+            p = self._curve(t)
+            tan = self._curve_tangent(t)
+
+            nrm = pygame.Vector2(-tan.y, tan.x)
+
+            outer.append(p + nrm * half_width)
+            inner.append(p - nrm * half_width)
+
+        poly = outer + list(reversed(inner))
+        return outer, inner, poly
 
     def _generate_polyline(self, n: int):
         pts = []

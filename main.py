@@ -67,7 +67,7 @@ while running:
             world_rect,
             car_obj,
             telemetry,
-            track_polyline=track.polyline
+            track=track
         )
     elif hud.active_tab == "Side":
         side.draw(window, world_rect, telemetry)
