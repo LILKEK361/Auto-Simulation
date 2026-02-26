@@ -17,7 +17,7 @@ class Track:
             "Dirt":    0.50,
             "Rasen":   0.35,
             "Glatt Eis": 0.001,
-            "Voll Haftung": 10,
+            "Voll Haftung": 1,
         }
         self.surface_color = {
             "Asphalt": (55, 55, 55),    # dunkelgrau

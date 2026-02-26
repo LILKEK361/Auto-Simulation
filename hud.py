@@ -77,7 +77,7 @@ class HUD:
         row_h = 26
         start = self.info_header.bottom + 8
         self.info_rows = []
-        for k in range(9):
+        for k in range(11):
             self.info_rows.append(pygame.Rect(x0 + pad, start + k*(row_h + 6), w - 2*pad, row_h))
 
         # Footer
