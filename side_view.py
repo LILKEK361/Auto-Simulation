@@ -15,6 +15,16 @@ class SideView:
     def __init__(self):
         self.font = pygame.font.Font(None, 22)
         self.small = pygame.font.Font(None, 18)
+        self.surface_color = {
+                "Asphalt": (55, 55, 55),    # dunkelgrau
+                "Terra":    (227, 83, 54),
+                "Dirt":    (120, 85, 55),   # braun
+                "Rasen":   (60, 130, 60),   # grün
+                "Terra":   (145, 120, 80),
+                "Glatt Eis": (38, 220, 206),  # optional
+                "Voll Haftung": (255,0,255),  # optional
+            }
+        self.selected_color = "Asphalt";
 
     def draw(self, screen, world_rect: pygame.Rect, telemetry: dict):
         # Hintergrund
@@ -33,11 +43,85 @@ class SideView:
         tile_h = 140
         gap = 18
 
-        front_rect = pygame.Rect(x0, y0 + 40, tile_w, tile_h)
-        rear_rect  = pygame.Rect(x0, front_rect.bottom + gap, tile_w, tile_h)
+        tire_radius= 50; 
+        # Berechne die Mitte des Bereichs
+        center_y = world_rect.centery
+        # Teile den Bereich horizontal für die beiden Reifen
+        left_center_x = world_rect.x + (world_rect.width / 4)
+        right_center_x = world_rect.x + (3 * world_rect.width / 4)
+        #Ground Coulor
+        ground_color = self.surface_color.get(self.selected_color, (100, 100, 100))
 
-        self._draw_tire_tile(screen, front_rect, "Vorderreifen (Antrieb + Lenkung)", front)
-        self._draw_tire_tile(screen, rear_rect, "Hinterreifen (rollend)", rear)
+
+        auto_chassie = pygame.Rect(0, 0,(  right_center_x - left_center_x ) + 150,100) 
+        auto_chassie.bottomleft = (left_center_x - 75, center_y)
+        pygame.draw.rect(screen,(180,180,180),auto_chassie)
+    
+#        front_rect = pygame.Rect(x0, y0 + 40, tile_w, tile_h)
+#       rear_rect  = pygame.Rect(x0, front_rect.bottom + gap, tile_w, tile_h)
+        ground = pygame.Rect(0,0,world_rect.w,  world_rect.h - (center_y + tire_radius));
+        ground.topleft = (0,center_y + tire_radius );
+        pygame.draw.rect(screen, ground_color,ground)
+
+
+        self._draw_tire_circle(screen,(right_center_x, center_y), tire_radius,"Vorderreifen (Antrieb + Lenkung)", front)
+        self._draw_tire_circle(screen,(left_center_x, center_y),tire_radius,"Hinterreifen (rollend)", rear)
+
+    def _draw_tire_circle(self, screen, center, radius, title, d: dict):
+        """Zeichnet einen Reifen als Kreis, dessen Farbe die Last anzeigt."""
+        
+        # 1. Daten holen
+        # Wir nutzen die effektive Kraft (Fx_eff), die tatsächlich übertragen wird.
+        Fx = d["Fx_eff"]
+        Fmax = d["Fmax"]
+        
+        # 2. Auslastung berechnen (Verhältnis von aktueller Kraft zu maximaler Kraft)
+        # Sicherheitsabfrage, falls Fmax=0 (z.B. Auto in der Luft)
+        if Fmax > 0.1:
+            load_ratio = abs(Fx) / Fmax
+        else:
+            load_ratio = 0.0
+            
+        # Begrenzen auf 1.0 für die Farbberechnung
+        clipped_ratio = min(1.0, load_ratio)
+        
+        # 3. Farbe berechnen (Interpolation Grün -> Gelb -> Rot)
+        # 0.0 (Grün) -> 0.5 (Gelb) -> 1.0 (Rot)
+        if clipped_ratio < 0.5:
+            # Grün zu Gelb
+            interp = clipped_ratio * 2.0 # 0.0 bis 1.0
+            r = int(0   + interp * 255)
+            g = int(200 + interp * 55) # Starten bei einem dunkleren Grün
+            b = 0
+        else:
+            # Gelb zu Rot
+            interp = (clipped_ratio - 0.5) * 2.0 # 0.0 bis 1.0
+            r = 255
+            g = int(255 - interp * 255)
+            b = 0
+            
+        color = (r, g, b)
+        
+        # 4. Zeichnen
+        # Gefüllter Kreis (die Farbe)
+        pygame.draw.circle(screen, color, center, radius)
+        # Schwarzer Rand
+        pygame.draw.circle(screen, (0, 0, 0), center, radius, 2)
+        
+        # 5. Beschriftung
+        # Titel (z.B. "Vorne")
+        title_surf = self.font.render(title, True, (0,0,0))
+        title_rect = title_surf.get_rect(center=(center[0], center[1] - radius - 15))
+        screen.blit(title_surf, title_rect)
+        
+        # Prozentwert in der Mitte
+        pct_surf = self.font.render(f"{load_ratio*100:.0f}%", True, (0,0,0))
+        # Falls der Kreis sehr dunkelrot wird, Text weiß machen für Kontrast
+        if r > 200 and g < 50:
+             pct_surf = self.font.render(f"{load_ratio*100:.0f}%", True, (255,255,255))
+             
+        pct_rect = pct_surf.get_rect(center=center)
+        screen.blit(pct_surf, pct_rect)
 
     def _draw_tire_tile(self, screen, r: pygame.Rect, title: str, d: dict):
         pygame.draw.rect(screen, (255,255,255), r)

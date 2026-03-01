@@ -38,7 +38,7 @@ while running:
     # -------- Untergrund aus HUD -> Track --------
     # (Starter-Variante: ein Untergrund für die gesamte Strecke)
     track.set_all_surfaces(hud.selected_surface)
-
+    side.selected_color = hud.selected_surface;
     # -------- Progress auf Strecke bestimmen --------
     progress = track.find_progress_nearest(car_obj.position)
 
