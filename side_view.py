@@ -64,62 +64,82 @@ class SideView:
         pygame.draw.rect(screen, ground_color,ground)
 
 
-        self._draw_tire_circle(screen,(right_center_x, center_y), tire_radius,"Vorderreifen (Antrieb + Lenkung)", front)
-        self._draw_tire_circle(screen,(left_center_x, center_y),tire_radius,"Hinterreifen (rollend)", rear)
+        self._draw_tire_circle(screen,(right_center_x, center_y), tire_radius,"Slip (Antrieb + Lenkung)", front)
+        self._draw_tire_circle(screen,(left_center_x, center_y),tire_radius,"Slip (rollend)", rear)
+       
+        front_rect = pygame.Rect(x0, y0 + 40, tile_w, tile_h)
+        rear_rect  = pygame.Rect(x0, front_rect.bottom + gap, tile_w, tile_h)
+        
+        self._draw_front_tile(screen, right_center_x, center_y, front)
+
+        #self._draw_tire_tile(screen, front_rect, "Vorderreifen (Antrieb + Lenkung)", front)
+        #self._draw_tire_tile(screen, rear_rect, "Hinterreifen (rollend)", rear)
+
+    def _draw_front_tile(self,  screen,front_center_x, front_center_y, d: dict):
+        """ Zeichnet einen Kasten mit den Front daten """
+        r = pygame.Rect(0,0, 130, 180);
+        r.centery = front_center_y - 200;
+        r.centerx = front_center_x;
+
+
+        pygame.draw.rect(screen,  (255,255,255),r);
+        pygame.draw.rect(screen,  (60,60,60),r,2);
+
+        _text(screen, self.font, r.x + 10, r.y + 8, "Front Tire")
+
+        data_lines = [
+            f"mu: {d['mu']:.2f}",
+            f"Fz: {d['Fz']:.1f} N",
+            f"Fmax: {d['Fmax']:.1f} N",
+            f"Fx_req: {d['Fx_req']:.1f} N",
+            f"Fx_eff: {d['Fx_eff']:.1f} N",
+
+        ]
+
+        line_y = r.y + 40
+        for line in data_lines:
+            _text(screen, self.small, r.x + 10, line_y, line)
+            line_y += 20 # Abstand zwischen den Zeilen
+
 
     def _draw_tire_circle(self, screen, center, radius, title, d: dict):
-        """Zeichnet einen Reifen als Kreis, dessen Farbe die Last anzeigt."""
+        """Zeichnet einen Reifen als Kreis, dessen Farbe den Schlupf (Slip) anzeigt."""
         
-        # 1. Daten holen
-        # Wir nutzen die effektive Kraft (Fx_eff), die tatsächlich übertragen wird.
-        Fx = d["Fx_eff"]
-        Fmax = d["Fmax"]
+        # 1. Slip-Wert holen (direkt für Farbe und Anzeige)
+        slip = d.get("slip", 0.0)
+        clipped_slip = min(1.0, abs(slip)) # Absolutwert, falls negativer Schlupf (Bremsen) auftritt
         
-        # 2. Auslastung berechnen (Verhältnis von aktueller Kraft zu maximaler Kraft)
-        # Sicherheitsabfrage, falls Fmax=0 (z.B. Auto in der Luft)
-        if Fmax > 0.1:
-            load_ratio = abs(Fx) / Fmax
-        else:
-            load_ratio = 0.0
-            
-        # Begrenzen auf 1.0 für die Farbberechnung
-        clipped_ratio = min(1.0, load_ratio)
-        
-        # 3. Farbe berechnen (Interpolation Grün -> Gelb -> Rot)
-        # 0.0 (Grün) -> 0.5 (Gelb) -> 1.0 (Rot)
-        if clipped_ratio < 0.5:
-            # Grün zu Gelb
-            interp = clipped_ratio * 2.0 # 0.0 bis 1.0
-            r = int(0   + interp * 255)
-            g = int(200 + interp * 55) # Starten bei einem dunkleren Grün
+        # 2. Farbe berechnen (Interpolation Grün -> Gelb -> Rot)
+        if clipped_slip < 0.5:
+            # Grün (0.0) zu Gelb (0.5)
+            interp = clipped_slip * 2.0
+            r = int(0 + interp * 255)
+            g = int(200 + interp * 55)
             b = 0
         else:
-            # Gelb zu Rot
-            interp = (clipped_ratio - 0.5) * 2.0 # 0.0 bis 1.0
+            # Gelb (0.5) zu Rot (1.0)
+            interp = (clipped_slip - 0.5) * 2.0
             r = 255
             g = int(255 - interp * 255)
             b = 0
             
         color = (r, g, b)
         
-        # 4. Zeichnen
-        # Gefüllter Kreis (die Farbe)
+        # 3. Zeichnen
         pygame.draw.circle(screen, color, center, radius)
-        # Schwarzer Rand
         pygame.draw.circle(screen, (0, 0, 0), center, radius, 2)
         
-        # 5. Beschriftung
-        # Titel (z.B. "Vorne")
+        # 4. Titel
         title_surf = self.font.render(title, True, (0,0,0))
         title_rect = title_surf.get_rect(center=(center[0], center[1] - radius - 15))
         screen.blit(title_surf, title_rect)
         
-        # Prozentwert in der Mitte
-        pct_surf = self.font.render(f"{load_ratio*100:.0f}%", True, (0,0,0))
-        # Falls der Kreis sehr dunkelrot wird, Text weiß machen für Kontrast
-        if r > 200 and g < 50:
-             pct_surf = self.font.render(f"{load_ratio*100:.0f}%", True, (255,255,255))
-             
+        # 5. Schlupf-Prozentwert in der Mitte
+        pct_text = f"{clipped_slip*100:.0f}%"
+        # Kontrast-Check für den Text (falls es zu dunkelrot wird)
+        text_color = (255, 255, 255) if (r > 150 and g < 100) else (0, 0, 0)
+        
+        pct_surf = self.font.render(pct_text, True, text_color)
         pct_rect = pct_surf.get_rect(center=center)
         screen.blit(pct_surf, pct_rect)
 
