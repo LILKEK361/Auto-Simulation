@@ -1,1 +1,32 @@
-EIERLECKER
+# Autosimulation
+In diesem Python Projekt wird ein Auto, sowie verschiedene Kräfte, die auf dieses wirken, simultiert. 
+
+# Vorbereitung
+## Nur wenn nicht die exe verwendet wird:
+- Es muss die Python version 3.13 auf ihrem digitalen Endgerät installiert sein.
+
+- Es muss die lib pygame über den Befehl: `pip install pygame` installiert werden.
+
+# Ausfürhung
+## Start der Main
+Sollte sie die main.py ausführen wollen, machen sie dies über dies mit dem folgenden Befehl: `python main.py` 
+
+## Start der exe
+Sollte sie das Programm über die Exe starten wollen, doppel klicken sie diese im Ordner output/main.exe
+
+# GUI
+
+## Sidebar
+Über die Oberen beiden Knöpfe kann zwischen Side View und Top Down gewechselt werden. Mithilfe der sechs Knöpfe darunter kann zwischen verschieden Untergründen gewählt werden. Außerdem werden noch vershciedene Daten, wie Geschwindigkeit, G-Kräfte, Haftreibung, etc angezeigt. 
+
+## TOP-Down
+Hier wird die Streck sowie das Auto von oben angezeigt, dabei werden die Verschiedene Kräfte über Pfeile am Auto dargestellt
+## Side View
+Hier werden die einzelnen Kräfte am den Reifen des Autos dargestellt
+
+
+# Authoren
+- Anniko ....
+- Emil Ficken
+- Felix Jau
+- Nick Chillmann
